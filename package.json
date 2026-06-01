@@ -1,0 +1,14 @@
+{
+  "name": "sber-auto",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env index.js"
+  },
+  "dependencies": {
+    "imapflow": "^1.3.5",
+    "cheerio": "^1.2.0",
+    "systray2": "^2.1.0",
+    "node-cron": "^3.0.3"
+  }
+}
