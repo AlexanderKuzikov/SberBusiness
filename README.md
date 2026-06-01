@@ -3,7 +3,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v24+-green?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Windows](https://img.shields.io/badge/OS-Windows%2010%2F11-blue?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![IMAP](https://img.shields.io/badge/Protocol-IMAP-orange?logo=mail.ru&logoColor=white)](https://www.rfc-editor.org/rfc/rfc3501)
-[![License]([https://img.shields.io/badge/License-MIT-brightgreen](https://github.com/AlexanderKuzikov/SberBusiness#Apache-2.0-1-ov-file))](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Security](https://img.shields.io/badge/Security-npm%20audit-passing)](package.json)
 
 ---
