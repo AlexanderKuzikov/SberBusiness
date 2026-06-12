@@ -32,8 +32,7 @@ function fetchOptions(url, timeoutMs) {
 export async function headUrl(url, timeoutMs = 10000) {
   const response = await fetch(url, {
     method: 'HEAD',
-    signal: AbortSignal.timeout(timeoutMs),
-    headers: { 'User-Agent': USER_AGENT },
+    ...fetchOptions(url, timeoutMs),
   });
 
   return {
@@ -51,8 +50,7 @@ export async function downloadValidatedXlsx(url, filePath, options = {}) {
 
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(timeoutMs),
-      headers: { 'User-Agent': USER_AGENT },
+      ...fetchOptions(url, timeoutMs),
     });
 
     if (!response.ok) {
