@@ -1,9 +1,33 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { Agent } from 'undici';
 import { validateXlsxBuffer } from './xlsx-validator.js';
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+const SBER_TLS_DISPATCHER = new Agent({ connect: { rejectUnauthorized: false } });
+
+function isSberDownloadHost(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'sbi.sberbank.ru' && parsed.port === '9443';
+  } catch {
+    return false;
+  }
+}
+
+function fetchOptions(url, timeoutMs) {
+  const options = {
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: { 'User-Agent': USER_AGENT },
+  };
+
+  if (isSberDownloadHost(url)) {
+    options.dispatcher = SBER_TLS_DISPATCHER;
+  }
+
+  return options;
+}
 
 export async function headUrl(url, timeoutMs = 10000) {
   const response = await fetch(url, {
