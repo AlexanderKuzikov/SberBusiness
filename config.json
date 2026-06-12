@@ -1,0 +1,32 @@
+{
+  "imap": {
+    "host": "imap.gmail.com",
+    "port": 993,
+    "secure": true,
+    "auth": {
+      "userEnv": "IMAP_USER",
+      "passEnv": "IMAP_PASS"
+    }
+  },
+  "mailbox": "INBOX",
+  "search": {
+    "subject": "Выписка по счету"
+  },
+  "downloadDir": "C:\\SberStatements",
+  "successTime": "10:00",
+  "retryHours": 3,
+  "logs": {
+    "dir": "logs",
+    "file": "sber.log",
+    "statusFile": "status.json"
+  },
+  "download": {
+    "headTimeoutMs": 10000,
+    "timeoutMs": 30000
+  },
+  "tray": {
+    "enabled": true,
+    "title": "SberBusiness",
+    "tooltip": "Ожидание проверки..."
+  }
+}
