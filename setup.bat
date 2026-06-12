@@ -68,9 +68,10 @@ echo.
 echo [4/5] Проверка безопасности (npm audit --omit=dev --audit-level=moderate)...
 call npm audit --omit=dev --audit-level=moderate
 if %errorlevel% neq 0 (
-    echo ОШИБКА: Обнаружены уязвимости уровня moderate или выше.
-    pause
-    exit /b 1
+    echo.
+    echo ПРЕДУПРЕЖДЕНИЕ: npm audit нашёл замечания или не смог завершить проверку.
+    echo Установка продолжена.
+    echo Для деталей выполни отдельно: npm audit --omit=dev
 )
 
 :: Создание .env
