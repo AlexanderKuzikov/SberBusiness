@@ -1,6 +1,8 @@
 @echo off
 chcp 65001 >nul
 setlocal EnableDelayedExpansion
+if not defined USERPROFILE set "USERPROFILE=%HOMEDRIVE%%HOMEPATH%"
+if not defined APPDATA set "APPDATA=%USERPROFILE%\AppData\Roaming"
 cd /d "%~dp0"
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
@@ -107,11 +109,18 @@ echo.
 echo Создать ярлык SberBusiness на рабочем столе? (Y/N)
 set /p create_shortcut=
 if /i "!create_shortcut!"=="Y" (
-    if exist "%USERPROFILE%\\Desktop" (
+    if defined USERPROFILE (
+        set "DESKTOP=%USERPROFILE%\Desktop"
+    ) else if defined HOMEDRIVE (
+        set "DESKTOP=%HOMEDRIVE%%HOMEPATH%\Desktop"
+    ) else (
+        set "DESKTOP=%CD%"
+    )
+    if not exist "%DESKTOP%" mkdir "%DESKTOP%" >nul 2>nul
+    if exist "%DESKTOP%" (
         echo.
         echo Создаю ярлык на рабочем столе...
-        set "DESKTOP=%USERPROFILE%\\Desktop"
-        set "SHORTCUT=%DESKTOP%\\SberBusiness.lnk"
+        set "SHORTCUT=%DESKTOP%\SberBusiness.lnk"
         powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut($env:SHORTCUT); $Shortcut.TargetPath = 'node.exe'; $Shortcut.Arguments = ('--env-file=\"' + $env:ENV_FILE + '\" \"' + $env:INDEX_JS + '\"'); $Shortcut.WorkingDirectory = $env:SCRIPT_DIR; $Shortcut.WindowStyle = 7; $Shortcut.Save()"
         if !errorlevel! equ 0 (
             echo Ярлык создан: %SHORTCUT%
