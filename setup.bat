@@ -110,12 +110,15 @@ echo.
 echo Создать ярлык SberBusiness на рабочем столе? (Y/N)
 set /p create_shortcut=
 if /i "!create_shortcut!"=="Y" (
-    if defined USERPROFILE (
-        set "DESKTOP=%USERPROFILE%\Desktop"
-    ) else if defined HOMEDRIVE (
-        set "DESKTOP=%HOMEDRIVE%%HOMEPATH%\Desktop"
-    ) else (
-        set "DESKTOP=%CD%"
+    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP=%%D"
+    if not defined DESKTOP (
+        if defined USERPROFILE (
+            set "DESKTOP=%USERPROFILE%\Desktop"
+        ) else if defined HOMEDRIVE (
+            set "DESKTOP=%HOMEDRIVE%%HOMEPATH%\Desktop"
+        ) else (
+            set "DESKTOP=%CD%"
+        )
     )
     if not exist "%DESKTOP%" mkdir "%DESKTOP%" >nul 2>nul
     if exist "%DESKTOP%" (
