@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process';
-import SysTray from 'systray2';
+import systrayModule from 'systray2';
+
+const SysTray = systrayModule.default || systrayModule;
 
 export const ICONS = {
   waiting: 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAABYgAAAWIB1QYfOAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABjSURBVFiF7dYxCgAgDEPR3P/W1kHBCxRG0FZx8K8JZMgbCpIkSZIk/dsC2Jl9O8FdAEaAuQDuAjACzAVwF4ARYC6AuwCMAB4RuAvACOB5hbsAjABzAdwFYASYC+AuACPAR4W7AIwAHhXuAjACeFbhLgAAAP8BHvUY6L0n6T0AAAAASUVORK5CYII=',

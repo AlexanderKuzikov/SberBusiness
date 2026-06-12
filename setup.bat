@@ -79,37 +79,46 @@ if not exist .env (
     echo [5/5] .env уже существует, пропускаем
 )
 
-:: Добавление в автозагрузку
+:: Опционально: добавление в автозагрузку
 echo.
-echo Добавление в автозагрузку...
-set "SCRIPT_DIR=%~dp0"
-set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-
-:: Создание ярлыка в папке автозагрузки
-set "STARTUP=%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup"
-set "SHORTCUT=%STARTUP%\\SberBusiness.lnk"
-
-powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'node'; $s.Arguments = '--env-file=\\\"\\\"%SCRIPT_DIR%\\.env\\\"\\\" \\\"%SCRIPT_DIR%\\index.js\\\"'; $s.WorkingDirectory = '%SCRIPT_DIR%'; $s.WindowStyle = 7; $s.Save()"
-
-if %errorlevel% equ 0 (
+echo Добавить SberBusiness в автозагрузку Windows? (Y/N)
+set /p add_startup=
+if /i "!add_startup!"=="Y" (
     echo.
-    echo ===================================
-    echo  Установка завершена!
-    echo ===================================
-    echo.
-    echo Автозагрузка: %STARTUP%
-    echo Логи: %SCRIPT_DIR%\\logs\\sber.log
-    echo Конфиг: %SCRIPT_DIR%\\config.json
-    echo.
-    echo SberBusiness появится в трее при следующем входе в систему.
-    echo Запустить сейчас? (Y/N)
-    set /p run_now=
-    if /i "!run_now!"=="Y" (
-        echo Запуск...
-        start /b node --env-file="%SCRIPT_DIR%\.env" "%SCRIPT_DIR%\index.js"
+    echo Добавляю в автозагрузку...
+    set "STARTUP=%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup"
+    set "SHORTCUT=%STARTUP%\\SberBusiness.lnk"
+    powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'node.exe'; $s.Arguments = '--env-file=\\\"%SCRIPT_DIR%\\.env\\\" \\\"%SCRIPT_DIR%\\index.js\\\"'; $s.WorkingDirectory = '%SCRIPT_DIR%'; $s.WindowStyle = 7; $s.Save()"
+    if !errorlevel! equ 0 (
+        echo Автозагрузка добавлена: %SHORTCUT%
+    ) else (
+        echo ОШИБКА: Не удалось добавить SberBusiness в автозагрузку.
     )
 ) else (
-    echo ОШИБКА: Не удалось создать ярлык в автозагрузке.
+    echo Автозагрузка не изменена.
+)
+
+:: Опционально: создание ярлыка на рабочем столе
+echo.
+echo Создать ярлык SberBusiness на рабочем столе? (Y/N)
+set /p create_shortcut=
+if /i "!create_shortcut!"=="Y" (
+    if exist "%USERPROFILE%\\Desktop" (
+        echo.
+        echo Создаю ярлык на рабочем столе...
+        set "DESKTOP=%USERPROFILE%\\Desktop"
+        set "SHORTCUT=%DESKTOP%\\SberBusiness.lnk"
+        powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'node.exe'; $s.Arguments = '--env-file=\\\"%SCRIPT_DIR%\\.env\\\" \\\"%SCRIPT_DIR%\\index.js\\\"'; $s.WorkingDirectory = '%SCRIPT_DIR%'; $s.WindowStyle = 7; $s.Save()"
+        if !errorlevel! equ 0 (
+            echo Ярлык создан: %SHORTCUT%
+        ) else (
+            echo ОШИБКА: Не удалось создать ярлык на рабочем столе.
+        )
+    ) else (
+        echo Папка рабочего стола не найдена. Ярлык не создан.
+    )
+) else (
+    echo Ярлык на рабочем столе не создан.
 )
 
 echo.
