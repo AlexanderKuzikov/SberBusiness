@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-const SBER_DOWNLOAD_URL_PATTERN = /https:\/\/sbi\.sberbank\.ru:9443\/ic\/ufs\/scheduled-statements\/v1\/rest\/download\/mail\/reports\/[A-Za-z0-9]+/g;
+const SBER_DOWNLOAD_PREFIX = 'https://sbi.sberbank.ru:9443/ic/ufs/scheduled-statements/v1/rest/download/mail/reports/';
 
 function decodeQuotedPrintable(value) {
   return String(value || '')
@@ -181,7 +181,20 @@ function statementFileName(dateStr) {
 
 function extractSberDownloadLink(source) {
   const normalized = decodeQuotedPrintable(String(source || ''));
-  return normalized.match(SBER_DOWNLOAD_URL_PATTERN)?.[0] || null;
+  const start = normalized.indexOf(SBER_DOWNLOAD_PREFIX);
+
+  if (start === -1) return null;
+
+  const rest = normalized.slice(start);
+  const endPatterns = ['"', "'", '<', '>', ' ', '\r', '\n', '\t'];
+  let end = rest.length;
+
+  for (const pattern of endPatterns) {
+    const index = rest.indexOf(pattern);
+    if (index !== -1 && index < end) end = index;
+  }
+
+  return rest.slice(0, end).trim();
 }
 
 function extractStatementDate(source) {
