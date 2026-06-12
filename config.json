@@ -10,6 +10,7 @@
   },
   "mailbox": "INBOX",
   "search": {
+    "from": "sberbusiness@sberbank.ru",
     "subject": "Выписка по счету"
   },
   "downloadDir": "C:\\SberStatements",

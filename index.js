@@ -174,13 +174,16 @@ export async function checkAndDownload(config) {
     lock = await client.getMailboxLock(config.mailbox);
 
     try {
-      const searchResult = await client.search(
-        {
-          unseen: true,
-          subject: config.search.subject,
-        },
-        { uid: true },
-      ) || [];
+      const searchCriteria = {
+        unseen: true,
+        subject: config.search.subject,
+      };
+
+      if (config.search.from) {
+        searchCriteria.from = config.search.from;
+      }
+
+      const searchResult = await client.search(searchCriteria, { uid: true }) || [];
 
       if (searchResult.length === 0) {
         await log(config, 'INFO', 'Нет новых писем с выпиской');

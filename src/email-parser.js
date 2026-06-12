@@ -1,18 +1,23 @@
 import * as cheerio from 'cheerio';
 
+const SBER_DOWNLOAD_URL_PATTERN = /https:\/\/sbi\.sberbank\.ru:9443\/ic\/ufs\/scheduled-statements\/v1\/rest\/download\/mail\/reports\/[A-Za-z0-9]+/g;
+
 function decodeQuotedPrintable(value) {
-  return value.replace(/=([0-9A-Fa-f]{2})|=\r?\n/g, (_, hex) => {
-    if (hex) return String.fromCharCode(parseInt(hex, 16));
-    return '';
-  });
+  return String(value || '')
+    .replace(/=\r?\n/g, '')
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 function decodeBase64(value) {
-  return Buffer.from(value.replace(/\s/g, ''), 'base64').toString('utf8');
+  try {
+    return Buffer.from(String(value || '').replace(/\s/g, ''), 'base64').toString('utf8');
+  } catch {
+    return String(value || '');
+  }
 }
 
-function unfoldHeaders(rawHeaders) {
-  const lines = rawHeaders.replace(/\r\n/g, '\n').split('\n');
+function unfoldHeaders(raw) {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
   const unfolded = [];
 
   for (const line of lines) {
@@ -61,10 +66,39 @@ function splitBuffer(buffer, separator) {
   }
 }
 
+function stripBoundaryPrefix(source) {
+  let result = source;
+
+  while (result.startsWith('\r\n') || result.startsWith('\n')) {
+    result = result.replace(/^\r?\n/, '');
+  }
+
+  if (result.startsWith('--')) {
+    result = result.replace(/^--.*(?:\r?\n|\n)/, '');
+  }
+
+  while (result.startsWith('\r\n') || result.startsWith('\n')) {
+    result = result.replace(/^\r?\n/, '');
+  }
+
+  return result;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function splitMimeBoundary(buffer, boundary) {
+  const regex = new RegExp(`--${escapeRegExp(boundary)}`, 'i');
+  return String(buffer.toString('utf8'))
+    .split(regex)
+    .map((chunk) => Buffer.from(chunk));
+}
+
 function splitMimeParts(rawSource) {
-  const source = Buffer.isBuffer(rawSource) ? rawSource : Buffer.from(rawSource);
-  const headerEnd = source.indexOf(Buffer.from('\r\n\r\n'));
-  const separator = headerEnd === -1 ? Buffer.from('\n\n') : Buffer.from('\r\n\r\n');
+  let source = Buffer.isBuffer(rawSource) ? rawSource : Buffer.from(rawSource);
+  source = Buffer.from(stripBoundaryPrefix(source.toString('utf8')));
+  const separator = source.includes(Buffer.from('\r\n\r\n')) ? Buffer.from('\r\n\r\n') : Buffer.from('\n\n');
   const headerEndIndex = source.indexOf(separator);
 
   if (headerEndIndex === -1) {
@@ -79,7 +113,7 @@ function splitMimeParts(rawSource) {
   }
 
   const body = source.subarray(headerEndIndex + separator.length);
-  const chunks = splitBuffer(body, Buffer.from(`--${boundary}`));
+  const chunks = splitMimeBoundary(body, boundary);
 
   return chunks
     .map((chunk) => {
@@ -96,23 +130,34 @@ function splitMimeParts(rawSource) {
 
 function decodePart(part) {
   const encoding = String(part.headers['content-transfer-encoding'] || '').toLowerCase();
+
   if (encoding.includes('base64')) return decodeBase64(part.body);
   if (encoding.includes('quoted-printable')) return decodeQuotedPrintable(part.body);
+
   return part.body;
 }
 
-export function extractHtmlParts(rawSource) {
+function collectTextParts(rawSource) {
   const parts = splitMimeParts(rawSource);
-  const htmlParts = parts
-    .filter((part) => String(part.headers['content-type'] || '').toLowerCase().includes('text/html'))
-    .map((part) => decodePart(part))
-    .filter(Boolean);
+  const collected = [];
 
-  if (htmlParts.length > 0) return htmlParts;
+  for (const part of parts) {
+    const contentType = String(part.headers['content-type'] || '').toLowerCase();
 
-  const source = Buffer.isBuffer(rawSource) ? rawSource.toString('utf8') : String(rawSource);
-  const htmlMatch = source.match(/<html[\s\S]*?<\/html>/i);
-  return htmlMatch ? [htmlMatch[0]] : [];
+    if (contentType.startsWith('multipart/')) {
+      collected.push(...collectTextParts(part.body));
+      continue;
+    }
+
+    if (contentType.includes('text/html') || contentType.includes('text/plain')) {
+      collected.push({
+        type: contentType.includes('text/html') ? 'html' : 'text',
+        content: decodePart(part),
+      });
+    }
+  }
+
+  return collected;
 }
 
 function isValidDate(dateStr) {
@@ -134,8 +179,52 @@ function statementFileName(dateStr) {
   return `Sber_Statement_${yyyy}-${mm}-${dd}.xlsx`;
 }
 
-export function parseEmail(htmlSource) {
-  const html = Array.isArray(htmlSource) ? htmlSource.join('\n') : String(htmlSource || '');
+function extractSberDownloadLink(source) {
+  const normalized = decodeQuotedPrintable(String(source || ''));
+  return normalized.match(SBER_DOWNLOAD_URL_PATTERN)?.[0] || null;
+}
+
+function extractStatementDate(source) {
+  const text = String(source || '').replace(/\s+/g, ' ').trim();
+  const periodMatch = text.match(/период\s*:?\s*(\d{2}\.\d{2}\.\d{4})/i)
+    || text.match(/(\d{2}\.\d{2}\.\d{4})/);
+
+  return periodMatch && isValidDate(periodMatch[1]) ? periodMatch[1] : null;
+}
+
+export function extractHtmlParts(rawSource) {
+  const parts = collectTextParts(rawSource);
+  const htmlParts = parts
+    .filter((part) => part.type === 'html')
+    .map((part) => part.content)
+    .filter(Boolean);
+
+  if (htmlParts.length > 0) return htmlParts;
+
+  const textParts = parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.content)
+    .filter(Boolean);
+
+  if (textParts.length > 0) return textParts;
+
+  return [String(rawSource || '')];
+}
+
+export function parseEmail(emailSource) {
+  const sources = Array.isArray(emailSource) ? emailSource : [String(emailSource || '')];
+  const source = sources.join('\n');
+  const directLink = extractSberDownloadLink(source);
+
+  if (directLink) {
+    const dateStr = extractStatementDate(source);
+    return {
+      link: directLink,
+      fileName: dateStr ? statementFileName(dateStr) : todayFileName(),
+    };
+  }
+
+  const html = sources.join('\n');
   const $ = cheerio.load(html);
   let link = null;
 
