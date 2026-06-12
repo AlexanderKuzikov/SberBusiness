@@ -72,7 +72,7 @@ async function markSeen(client, uid) {
 }
 
 async function processMessage(client, uid, config) {
-  const download = client.fetch(uid, { source: true });
+  const download = client.fetch(uid, { source: true }, { uid: true });
   let emailSource = '';
 
   for await (const chunk of download) {
