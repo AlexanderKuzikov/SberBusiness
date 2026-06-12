@@ -2,6 +2,10 @@
 chcp 65001 >nul
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
+set "SCRIPT_DIR=%~dp0"
+set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "ENV_FILE=%SCRIPT_DIR%\.env"
+set "INDEX_JS=%SCRIPT_DIR%\index.js"
 
 echo ===================================
 echo  Установка SberBusiness
@@ -88,7 +92,7 @@ if /i "!add_startup!"=="Y" (
     echo Добавляю в автозагрузку...
     set "STARTUP=%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup"
     set "SHORTCUT=%STARTUP%\\SberBusiness.lnk"
-    powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'node.exe'; $s.Arguments = '--env-file=\\\"%SCRIPT_DIR%\\.env\\\" \\\"%SCRIPT_DIR%\\index.js\\\"'; $s.WorkingDirectory = '%SCRIPT_DIR%'; $s.WindowStyle = 7; $s.Save()"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut($env:SHORTCUT); $Shortcut.TargetPath = 'node.exe'; $Shortcut.Arguments = ('--env-file=\"' + $env:ENV_FILE + '\" \"' + $env:INDEX_JS + '\"'); $Shortcut.WorkingDirectory = $env:SCRIPT_DIR; $Shortcut.WindowStyle = 7; $Shortcut.Save()"
     if !errorlevel! equ 0 (
         echo Автозагрузка добавлена: %SHORTCUT%
     ) else (
@@ -108,7 +112,7 @@ if /i "!create_shortcut!"=="Y" (
         echo Создаю ярлык на рабочем столе...
         set "DESKTOP=%USERPROFILE%\\Desktop"
         set "SHORTCUT=%DESKTOP%\\SberBusiness.lnk"
-        powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'node.exe'; $s.Arguments = '--env-file=\\\"%SCRIPT_DIR%\\.env\\\" \\\"%SCRIPT_DIR%\\index.js\\\"'; $s.WorkingDirectory = '%SCRIPT_DIR%'; $s.WindowStyle = 7; $s.Save()"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut($env:SHORTCUT); $Shortcut.TargetPath = 'node.exe'; $Shortcut.Arguments = ('--env-file=\"' + $env:ENV_FILE + '\" \"' + $env:INDEX_JS + '\"'); $Shortcut.WorkingDirectory = $env:SCRIPT_DIR; $Shortcut.WindowStyle = 7; $Shortcut.Save()"
         if !errorlevel! equ 0 (
             echo Ярлык создан: %SHORTCUT%
         ) else (
